@@ -1,0 +1,64 @@
+[character]
+success_symbol = "[➜](bold green)"
+error_symbol = "[✗](bold red)"
+
+
+[username]
+style_user = 'white bold'
+style_root = 'black bold'
+format = '[$user]($style) - '
+disabled = true
+show_always = true
+
+[line_break]
+disabled = false
+
+[git_status]
+conflicted = '🏳'
+ahead = '🏎💨'
+behind = '😰'
+diverged = '😵'
+up_to_date = '✅'
+untracked = '🤷'
+stashed = '📦'
+modified = '📝'
+staged = '[++\($count\)](green)'
+renamed = '👅'
+deleted = '🗑'
+
+[aws]
+format = 'on [$symbol$region]($style) '
+style = 'bold yellow'
+symbol = '🅰 '
+
+[memory_usage]
+disabled = true
+threshold = -1
+symbol = ' '
+style = 'bold dimmed green'
+
+[java]
+disabled = true
+
+[helm]
+disabled = true
+
+[nodejs]
+disabled = true
+
+
+[kubernetes]
+disabled = false
+format = '[🎡 cluster: $context | ns: $namespace 🎡](blue) '
+
+[kubernetes.context_aliases]
+'dev.local.cluster.k8s' = 'dev'
+'.*/openshift-cluster/.*' = 'openshift'
+'gke_.*_(?P<var_cluster>[\w-]+)' = 'gke-$var_cluster'
+'arn:aws:eks:ap-south-2:074880180971:cluster/dev-apac-weguard-eks-cluster' = 'dev-aps2-k8s'
+'arn:aws:eks:us-west-2:074880180971:cluster/dev-weguard-eks-cluster' = 'dev-usw-2-k8s'
+'arn:aws:eks:us-west-2:074880180971:cluster/qa-weguard-eks-cluster' = 'qa-usw2-k8s'
+
+[kubernetes.user_aliases]
+'dev.local.cluster.k8s' = 'dev'
+'root/.*' = 'root'
