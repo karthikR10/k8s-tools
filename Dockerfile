@@ -1,0 +1,100 @@
+FROM python:3.10-alpine
+
+#Some Tools
+RUN apk add --no-cache curl gnupg bash-completion ncurses-terminfo-base ncurses-terminfo readline ncurses-libs bash nano ncurses docker git
+
+#Google Kubernetes control cmd
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+RUN chmod +x ./kubectl
+RUN mv ./kubectl /usr/local/bin/kubectl
+
+#Expose for kubectl proxy
+EXPOSE 8001
+
+#K8 Helm
+RUN wget -q "https://get.helm.sh/helm-v3.12.1-linux-amd64.tar.gz" -O helm.tar.gz && \
+tar -xzf helm.tar.gz && \
+rm helm.tar.gz && \
+mv linux-amd64/helm /usr/local/bin/helm
+
+# # Install Sops for secret management
+RUN curl -L https://github.com/mozilla/sops/releases/download/v3.7.3/sops-v3.7.3.linux -o /usr/local/bin/sops && \
+    chmod +x /usr/local/bin/sops
+
+# Startship
+RUN curl -sS https://starship.rs/install.sh | sh -s -- --yes
+
+RUN echo 'eval "$(starship init bash)"' >> ~/.bashrc
+
+# Copy starship.toml to the ~/.config directory
+COPY starship.toml /root/.config/starship.toml
+
+# Install Helm Secrets plugin
+RUN helm plugin install https://github.com/jkroepke/helm-secrets --version v4.4.2
+
+
+# Kubens \ Kubectx
+RUN curl -L https://github.com/ahmetb/kubectx/archive/v0.9.4.tar.gz | tar xz \
+    && cd ./kubectx-0.9.4 \
+    && mv kubectx kubens /usr/local/bin/ \
+    && chmod +x /usr/local/bin/kubectx \
+    && chmod +x /usr/local/bin/kubens \
+    && cat completion/kubectx.bash >> ~/.bashrc \
+    && cat completion/kubens.bash >> ~/.bashrc \
+    && cd ../ \
+    && rm -fr ./kubectx-0.9.4
+
+#Cloudfare SSL Tools
+RUN curl -L https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl_1.5.0_linux_amd64 -o /usr/local/bin/cfssl && \
+    curl -L https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssljson_1.5.0_linux_amd64 -o /usr/local/bin/cfssljson && \
+    chmod +x /usr/local/bin/cfssl && \
+    chmod +x /usr/local/bin/cfssljson
+
+#Syntax highlighting
+RUN git clone https://github.com/scopatz/nanorc.git ~/.nano && \
+    echo "include ~/.nano/*.nanorc" >> ~/.nanorc && \
+    rm ~/.nano/hcl.nanorc && rm /root/.nano/prolog.nanorc #These cause errors-remove them
+
+# Install AWS CLI
+RUN apk add --no-cache \
+        groff \
+        less \
+    && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install
+
+RUN apk add --no-cache bash openssh ca-certificates jq curl openssl perl git zip \
+ && apk add --no-cache --virtual .build-deps gcc make openssl-dev libffi-dev musl-dev linux-headers \
+ && apk add --no-cache libintl icu-libs libc6-compat \
+ && apk add --no-cache bash-completion \
+ && update-ca-certificates
+
+
+RUN echo -e "source <(kubectl completion bash)" >> ~/.bashrc
+RUN echo "source /etc/bash/bash_completion.sh" >> ~/.bashrc
+RUN echo "alias k=kubectl" >> ~/.bashrc
+    
+# Kube-ps1 - order so we can change themes without pulling kubeps1 every build
+# RUN curl -L https://github.com/jonmosco/kube-ps1/archive/0.6.0.tar.gz | tar xz  && \
+#     cd ./kube-ps1-0.6.0 && \
+#     mkdir -p ~/kube-ps1 && \ 
+#     mv kube-ps1.sh ~/kube-ps1/ && \
+#     rm -fr ./kube-ps1-0.6.0
+# COPY kubeps1.sh /root/kube-ps1/
+# RUN chmod +x ~/kube-ps1/*.sh && \
+#     echo "source ~/kube-ps1/kube-ps1.sh" >> ~/.bashrc && \
+#     echo "source ~/kube-ps1/kubeps1.sh" >> ~/.bashrc && \
+#     echo "PROMPT_COMMAND=\"my_kube_ps1\"" >> ~/.bashrc
+
+# Copy the bash profile script into the image
+COPY custom_bash_profile.sh /root/
+
+# Make the script executable
+RUN chmod +x /root/custom_bash_profile.sh && \
+    echo "source /root/custom_bash_profile.sh" >> ~/.bashrc
+
+ENV KUBE_EDITOR nano
+
+WORKDIR /
+
+ENTRYPOINT ["bash"]
